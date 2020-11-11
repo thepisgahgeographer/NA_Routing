@@ -31,12 +31,49 @@ class Tool(object):
         parameterType="Required",
         direction="Input")
 
-        
+        param1 = arcpy.Parameter(
+        displayName="VRP Solved Stops",
+        name="solved_stops",
+        datatype="GPFeatureLayer",
+        parameterType="Required",
+        direction="Input")
 
-########################################################################################
-        
+        param2 = arcpy.Parameter(
+        displayName="Routes Table/Feature Class",
+        name="input_routes",
+        datatype=["GPFeatureLayer", "DETable"],
+        parameterType="Required",
+        direction="Input")
 
-        params = [param0, param1, param2, param3, param4, param5]
+        param3 = arcpy.Parameter(
+        displayName="Depots",
+        name="input_depots",
+        datatype="GPFeatureLayer",
+        parameterType="Required",
+        direction="Input")
+
+        param4 = arcpy.Parameter(
+        displayName="Consolidate Orders Output Stops",
+        name="stops_location",
+        datatype="GPFeatureLayer",
+        parameterType="Required",
+        direction="Input")
+
+        param5 = arcpy.Parameter(
+        displayName="Network Dataset",
+        name="network_dataset",
+        datatype="DENetworkDataset",
+        parameterType="Required",
+        direction="Input")
+     
+        param6 = arcpy.Parameter(
+        displayName="Output Route Data",
+        name="route_data_location",
+        datatype="DEFolder",
+        parameterType="Required",
+        direction="Input")
+ 
+        params = [param0, param1, param2, param3, param4, param5, param6]
         return params
 
     def isLicensed(self):
@@ -59,96 +96,123 @@ class Tool(object):
         import os
         import sys
 
-        def consolidatedOrders(original_orders, consolidated_orders, network_dataset, \
-                        undissolved_streets_network, order_dependency_file, \
-                        stops_location):
+        def ExpandOrders(order_dependencies_file, solved_stops, stops_location, network_dataset, input_routes, input_depots, route_data_location):
+     
+        # Open the file that was created when consolidating orders so we can find
+        # all of the dependent orders
+            order_dependencies = {}
+            with open (order_dependencies_file, "r") as f:
+                lines = f.readlines()
+                for line in lines:
+                    line = line.strip("\n")
+                    orders = [e for e in line.split(",")]
+                    order_dependencies[orders[0]] = orders
 
-                # Create a Route Analysis layer so we can get the correct side of edge
-            routes_object = arcpy.na.MakeRouteAnalysisLayer(network_dataset, "Route", \
-                                    "Driving Time", "USE_CURRENT_ORDER", None, \
-                                    "LOCAL_TIME_AT_LOCATIONS", "ALONG_NETWORK", \
-                                    None, "DIRECTIONS")
+            # Open the stops table and make a dictionary for the orders with their route
+            # assignment and a list of all the route names
+            stops_search_cursor = arcpy.da.SearchCursor(solved_stops, ["Name", "RouteName"])
+            stops_route_assignment = {}
+            route_names = []
+            for row in stops_search_cursor:
+                stops_route_assignment[row[0]] = row[1]
+                if row[1] not in route_names:
+                    route_names.append(row[1])
 
-            layer_object = routes_object.getOutput(0)
-            sublayer_names = arcpy.na.GetNAClassNames(layer_object)
-            stops_layer_name = sublayer_names["Stops"]
-            stops_layer_object = layer_object.listLayers(stops_layer_name)[0]
-            field_mappings = "Name USER_Customer_Name #"
-            arcpy.na.AddLocations(layer_object, "Stops", original_orders, field_mappings)
+            # Update the stops_location with the route assignment for all of the orders
+            # based on the route the super order was assigned
+            arcpy.AddMessage("Adding Route Assignments...")
+            arcpy.MakeFeatureLayer_management(stops_location, "original_stops_layer")
+            for order in order_dependencies:
+                # Get the route assignment
+                route_assignment = stops_route_assignment[order]
+                # Select all the orders that were consolidated into that super order
+                for order_name in order_dependencies[order]:
+                    select_by_attribute_expression = "Name = '{}'".format(order_name)
+                    arcpy.management.SelectLayerByAttribute("original_stops_layer", "ADD_TO_SELECTION", select_by_attribute_expression)
+                # Update the original orders with the assignment rule
+                update_cursor = arcpy.da.UpdateCursor("original_stops_layer", ["RouteName", "Attr_TravelTime", "Sequence", "CurbApproach"])
+                for row in update_cursor:
+                    row[0] = route_assignment
+                    row[1] = 0.25
+                    row[2] = None
+                    row[3] = 1
+                    update_cursor.updateRow(row)
+                arcpy.management.SelectLayerByAttribute("original_stops_layer", "CLEAR_SELECTION")
 
-            # Save the Stops layer so we can use it again when expanding
-            arcpy.management.CopyFeatures(stops_layer_object, stops_location)
+            # For each route name in the VRP problem make a route layer and solve it
+            # with finding the best route preserving the first and last stop.
+            arcpy.CheckOutExtension("network")
 
-            # Perform a near analysis to the undissolved streets network
-            arcpy.analysis.Near(stops_layer_object, undissolved_streets_network, None, \
-                        "NO_LOCATION", "NO_ANGLE", "PLANAR")
+            # Create a feature layer for the depot
+            arcpy.MakeFeatureLayer_management(input_depots, "depots_layer")
 
-            # Create a search cursor for the stops_layer_object
-            arcpy.AddMessage("Consolidated orders on streets...")
-            fields = ["NEAR_FID", "Name", "PosAlong", "SideOfEdge"]
-            cursor = arcpy.da.SearchCursor(stops_layer_object, fields)
+            depot_search_cursor = arcpy.da.SearchCursor("depots_layer", ["Name"])
+            for row in depot_search_cursor:
+                print (row[0])
 
-            # Save a dictionary street_position_order - {street: {side_of_edge : (posAlong, name)}}
-            street_position_order = {}
-            for row in cursor:
-                street_segment = row[0]
-                order_name = row[1]
-                order_pos = row[2]
-                side_of_edge = row[3]
-                if side_of_edge in street_position_order:
-                    if street_segment in street_position_order[side_of_edge]:
-                        orders_on_side = street_position_order[side_of_edge][street_segment]
-                        orders_on_side.append((order_pos, order_name))
-                        street_position_order[side_of_edge][street_segment] = orders_on_side
-                    else:
-                        street_position_order[side_of_edge][street_segment] = [(order_pos, order_name)]
-                else:
-                    street_position_order[side_of_edge] = {}
-                    street_position_order[side_of_edge][street_segment] = [(order_pos, order_name)]
+            for route_name in route_names:
+                arcpy.AddMessage("Making Route Layer for " + route_name)
 
-            # Add a single consolidated order for each street segment and side of edge
-            name_to_number_of_orders = {}
+                # Make a route layer
+                routes_object = arcpy.na.MakeRouteAnalysisLayer(network_dataset, route_name, \
+                                        "Driving Time", "PRESERVE_BOTH", None, \
+                                        "LOCAL_TIME_AT_LOCATIONS", "ALONG_NETWORK", \
+                                        None, "DIRECTIONS")
 
-            for side_of_edge in street_position_order:
-                for street_segment in street_position_order[side_of_edge]:
-                    number_consolidating = len(street_position_order[side_of_edge][street_segment])
-                    order_to_use_as_consolidate = street_position_order[side_of_edge][street_segment][0][1]
-                    sqlQuery = "Name = '{}'".format(order_to_use_as_consolidate)
-                    print (sqlQuery, street_position_order[side_of_edge][street_segment], number_consolidating)
-                    arcpy.management.SelectLayerByAttribute(stops_layer_object, "NEW_SELECTION", sqlQuery)
-                    name_to_number_of_orders[order_to_use_as_consolidate] = number_consolidating
+                # Identify the Stops layer
+                layer_object = routes_object.getOutput(0)
+                sublayer_names = arcpy.na.GetNAClassNames(layer_object)
+                stops_layer_name = sublayer_names["Stops"]
+                stops_layer_object = layer_object.listLayers(stops_layer_name)[0]
 
-                    # Append to the consolidated orders feature class
-                    arcpy.management.Append(stops_layer_object, consolidated_orders, "NO_TEST")
+                # Find out what the starting and ending depot are for the route
+                routes_search_cursor = arcpy.da.SearchCursor(input_routes, ["Name", "StartDepotName", "EndDepotName"])
+                for row in routes_search_cursor:
+                    if row[0] == route_name:
+                        start_depot = row[1]
+                        end_depot = row[2]
+                        print(start_depot, end_depot)
 
-                    # Write the order dependencies to a text file so they can be expanded
-                    # back out after we have a solution to the clustering
-                    dependent_orders = ""
-                    if number_consolidating > 1:
-                        for i in range(1, number_consolidating):
-                            dependent_orders += ",{}".format(street_position_order[side_of_edge][street_segment][i][1])
-                    with open(order_dependency_file, "a") as f:
-                        f.write("{}{}\n".format(order_to_use_as_consolidate, dependent_orders))
+                # select the start depot and load it
+                select_by_attribute_expression = "Name = '{}'".format(start_depot)
+                arcpy.management.SelectLayerByAttribute("depots_layer", "NEW_SELECTION", select_by_attribute_expression)
+                arcpy.na.AddLocations(layer_object, "Stops", "depots_layer")
 
-            # Update the table with the right service time and pickup quantity
-            update_cursor = arcpy.da.UpdateCursor(consolidated_orders, ["Name", "ServiceTime", "PickupQuantities", "CurbApproach"])
-            for row in update_cursor:
-                quantity = name_to_number_of_orders[row[0]]
-                row[1] = quantity*0.25
-                row[2] = quantity
-                row[3] = 1
-                update_cursor.updateRow(row)
+                # select the orders that are on the route
+                select_by_attribute_expression = "RouteName = '{}'".format(route_name)
+                arcpy.management.SelectLayerByAttribute("original_stops_layer", "NEW_SELECTION", select_by_attribute_expression)
+                arcpy.na.AddLocations(layer_object, "Stops", "original_stops_layer")
 
-if __name__ == '__main__':
-    undissolved_streets_network = ''#Put the path to the streets feature class that is the output from the Feature To Line
-    network_dataset = '' #Put the path to the actual network dataset used for routing
-    original_orders = '' #Put the path to the feature class of the order locations. I uesd the Monday_Addresses
-    consolidated_orders = '' #Put the path to an empty feature class with the Orders schema
-    order_dependency_file = '' # Put a path with filename.txt for the dependency of the consolidation to the full set of orders to be stored
-    stops_location = '' # Put a path to a gdb with a feature class name such as orginal_stops to store the original orders in a feature class with schema needed for expanding
-    try:
-        consolidatedOrders(original_orders, consolidated_orders, network_dataset, undissolved_streets_network, order_dependency_file, stops_location)
-        print("Successful")
-    except:
-        print("Script Failed")
-  
+                # select the end depot and load it
+                select_by_attribute_expression = "Name = '{}'".format(end_depot)
+                arcpy.management.SelectLayerByAttribute("depots_layer", "NEW_SELECTION", select_by_attribute_expression)
+                arcpy.na.AddLocations(layer_object, "Stops", "depots_layer")
+
+                # Use the field calculator to make the route name the same on all the routes
+                # and the sequence to be the object ID
+                arcpy.management.CalculateField(stops_layer_object, "RouteName", "'" + route_name + "'", "PYTHON3", '', "TEXT")
+                arcpy.management.CalculateField(stops_layer_object, "Sequence", "!ObjectID!", "PYTHON3", '', "TEXT")
+
+                # Solve and save the route
+                arcpy.na.Solve(layer_object,"SKIP")
+                saved_route_file = os.path.join(route_data_location, route_name + ".lyr")
+                arcpy.management.SaveToLayerFile(layer_object, saved_route_file, "RELATIVE")
+                arcpy.na.ShareAsRouteLayers(layer_object)
+
+            arcpy.AddMessage("Finished running")
+
+        if __name__ == '__main__':
+            order_dependencies_file = '' # The location of the order dependency file from the ConsolidateOrders script
+            solved_stops = '' # The Stops output table from the VRP problem
+            input_routes = '' # The routes table or feature class that was used for the VRP problem
+            input_depots = '' # The depots feature class that was used for the VRP problem
+            stops_location = '' # The location of the stops saved from the ConsolidateOrders script (should have all the original locations)
+            network_dataset = '' # The network dataset location
+            route_data_location = '' # Where the final zip file will be saved
+        try:
+            ExpandOrders(order_dependencies_file, solved_stops, stops_location, \
+                    network_dataset, input_routes, input_depots, route_data_location)
+            print("Successful")
+        except:
+            print("Script Failed")      
+    
