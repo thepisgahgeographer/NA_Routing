@@ -202,13 +202,13 @@ class Tool(object):
             arcpy.AddMessage("Finished running")
 
         if __name__ == '__main__':
-            order_dependencies_file = '' # The location of the order dependency file from the ConsolidateOrders script
-            solved_stops = '' # The Stops output table from the VRP problem
-            input_routes = '' # The routes table or feature class that was used for the VRP problem
-            input_depots = '' # The depots feature class that was used for the VRP problem
-            stops_location = '' # The location of the stops saved from the ConsolidateOrders script (should have all the original locations)
-            network_dataset = '' # The network dataset location
-            route_data_location = '' # Where the final zip file will be saved
+            order_dependencies_file = parameters[0].valueAsText # The location of the order dependency file from the ConsolidateOrders script
+            solved_stops = parameters[1].valueAsText # The Stops output table from the VRP problem
+            input_routes = parameters[2].valueAsText # The routes table or feature class that was used for the VRP problem
+            input_depots = parameters[3].valueAsText # The depots feature class that was used for the VRP problem
+            stops_location = parameters[4].valueAsText # The location of the stops saved from the ConsolidateOrders script (should have all the original locations)
+            network_dataset = parameters[5].valueAsText # The network dataset location
+            route_data_location = parameters[6].valueAsText # Where the final zip file will be saved
         try:
             ExpandOrders(order_dependencies_file, solved_stops, stops_location, \
                     network_dataset, input_routes, input_depots, route_data_location)
