@@ -170,12 +170,12 @@ class Tool(object):
                 update_cursor.updateRow(row)
 
     if __name__ == '__main__':
-        undissolved_streets_network = parameters[0].valueAsText''#Put the path to the streets feature class that is the output from the Feature To Line
-        network_dataset = parameters[1].valueAsText'' #Put the path to the actual network dataset used for routing
-        original_orders = parameters[2].valueAsText'' #Put the path to the feature class of the order locations. I uesd the Monday_Addresses
-        consolidated_orders = parameters[3].valueAsText'' #Put the path to an empty feature class with the Orders schema
-        order_dependency_file = parameters[4].valueAsText'' # Put a path with filename.txt for the dependency of the consolidation to the full set of orders to be stored
-        stops_location = parameters[5].valueAsText'' # Put a path to a gdb with a feature class name such as orginal_stops to store the original orders in a feature class with schema needed for expanding
+        undissolved_streets_network = parameters[0].valueAsText#Put the path to the streets feature class that is the output from the Feature To Line
+        network_dataset = parameters[1].valueAsText #Put the path to the actual network dataset used for routing
+        original_orders = parameters[2].valueAsText #Put the path to the feature class of the order locations. I uesd the Monday_Addresses
+        consolidated_orders = parameters[3].valueAsText #Put the path to an empty feature class with the Orders schema
+        order_dependency_file = parameters[4].valueAsText # Put a path with filename.txt for the dependency of the consolidation to the full set of orders to be stored
+        stops_location = parameters[5].valueAsText # Put a path to a gdb with a feature class name such as orginal_stops to store the original orders in a feature class with schema needed for expanding
     try:
         consolidatedOrders(original_orders, consolidated_orders, network_dataset, undissolved_streets_network, order_dependency_file, stops_location)
         print("Successful")
