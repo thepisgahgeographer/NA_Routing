@@ -74,16 +74,16 @@ class Tool(object):
         direction="Input")
 
         param7 = arcpy.Parameter(
-        displayName="Output Route Data",
-        name="route_data_location",
-        datatype="DEFolder",
+        displayName="Origin Email Account",
+        name="sending_email_account",
+        datatype="GPString",
         parameterType="Required",
         direction="Input")
 
-        param7 = arcpy.Parameter(
-        displayName="Output Route Data",
-        name="route_data_location",
-        datatype="DEFolder",
+        param8 = arcpy.Parameter(
+        displayName="Destination Email Account",
+        name="recieving_email_account",
+        datatype="GPString",
         parameterType="Required",
         direction="Input")
  
@@ -109,6 +109,9 @@ class Tool(object):
         import arcpy
         import os
         import sys
+        import smtplib, ssl
+        from email.mime.text import MIMEText
+        from email.mime.multipart import MIMEMultipart
 
         def ExpandOrders(order_dependencies_file, solved_stops, stops_location, network_dataset, input_routes, input_depots, route_data_location):
      
@@ -223,6 +226,8 @@ class Tool(object):
             stops_location = parameters[4].valueAsText # The location of the stops saved from the ConsolidateOrders script (should have all the original locations)
             network_dataset = parameters[5].valueAsText # The network dataset location
             route_data_location = parameters[6].valueAsText # Where the final zip file will be saved
+            sending_email_account = parameters[7].valueAsText # Where the final zip file will be saved
+            recieving_email_account = parameters[8].valueAsText # Where the final zip file will be saved
         try:
             ExpandOrders(order_dependencies_file, solved_stops, stops_location, \
                     network_dataset, input_routes, input_depots, route_data_location)
