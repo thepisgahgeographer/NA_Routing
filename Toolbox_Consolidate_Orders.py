@@ -25,28 +25,28 @@ class Tool(object):
         """Define parameter definitions"""
 
         param0 = arcpy.Parameter(
-        displayName="Undisolved Streets Network",
+        displayName="Undissolved Streets Network: Polyline Feature Class",
         name="undissolved_streets_network",
         datatype="GPFeatureLayer",
         parameterType="Required",
         direction="Input")
 
         param1 = arcpy.Parameter(
-        displayName="Network Dataset",
+        displayName="Network Dataset: Input Network Dataset",
         name="network_dataset",
         datatype="GPNetworkDatasetLayer",
         parameterType="Required",
         direction="Input")
     
         param2 = arcpy.Parameter(
-        displayName="Original Orders",
+        displayName="Original Orders: Stop Locations Point Features",
         name="original_orders",
         datatype="GPFeatureLayer",
         parameterType="Required",
         direction="Input")
 
         param3 = arcpy.Parameter(
-        displayName="Consolidated Orders",
+        displayName="Consolidated Orders: hawk ",
         name="consolidated_orders",
         datatype="GPFeatureLayer",
         parameterType="Required",

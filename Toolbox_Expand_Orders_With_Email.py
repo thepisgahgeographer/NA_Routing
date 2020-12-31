@@ -109,9 +109,7 @@ class Tool(object):
         import arcpy
         import os
         import sys
-        import smtplib, ssl
-        from email.mime.text import MIMEText
-        from email.mime.multipart import MIMEMultipart
+        
 
         def ExpandOrders(order_dependencies_file, solved_stops, stops_location, network_dataset, input_routes, input_depots, route_data_location):
      
@@ -226,12 +224,59 @@ class Tool(object):
             stops_location = parameters[4].valueAsText # The location of the stops saved from the ConsolidateOrders script (should have all the original locations)
             network_dataset = parameters[5].valueAsText # The network dataset location
             route_data_location = parameters[6].valueAsText # Where the final zip file will be saved
-            sending_email_account = parameters[7].valueAsText # Where the final zip file will be saved
-            recieving_email_account = parameters[8].valueAsText # Where the final zip file will be saved
         try:
             ExpandOrders(order_dependencies_file, solved_stops, stops_location, \
                     network_dataset, input_routes, input_depots, route_data_location)
             print("Successful")
         except:
             print("Script Failed")      
-    
+
+        def emailClient(sending_email_account,recieving_email_account):
+            import smtplib, ssl
+            from email.mime.text import MIMEText
+            from email.mime.multipart import MIMEMultipart
+
+            #sending_email_account = parameters[7].valueAsText # Where the final zip file will be saved
+            #recieving_email_account = parameters[8].valueAsText # Where the final zip file will be saved
+
+            sending_email_account = parameters[7].valueAsText
+            recieving_email_account = parameters[8].valueAsText
+            password = getpass.getpass('Enter password')
+
+            msg = MIMEMultipart("alternative")
+            msg['From'] = sending_email_account
+            msg['To'] = recieving_email_account
+            msg['Subject'] = "Route Data"
+
+            text = """\
+                Hi,
+                You have a new route ready:"""+navigatorLink 
+            html = """\
+                <html>
+                <body>
+                    <p>Hi,<br><br>
+                    You have a new route ready:<br><br>
+                    <a href="""+navigatorLink+""">Open Turn by Turn Directions</a> OR<br><br>
+                    <a href="""+navigatorLinkOptimized+""">Open <b>Optimized</b> Turn by Turn Directions</a>
+                    </p>
+                </body>
+                </html>
+                """
+
+            # Turn these into plain/html MIMEText objects
+            part1 = MIMEText(text, "plain")
+            part2 = MIMEText(html, "html")
+
+            # Add HTML/plain-text parts to MIMEMultipart message
+            # The email client will try to render the last part first
+            msg.attach(part1)
+            msg.attach(part2)
+
+            # Create secure connection with server and send email
+            context = ssl.create_default_context()
+            with smtplib.SMTP_SSL("smtp.gmail.com", 465, context=context) as server:
+                server.login(sending_email_account, password)
+                server.sendmail(
+                    sending_email_account, recieving_email_account, message.as_string()
+                )
+                
