@@ -5,8 +5,7 @@ import arcpy
 
 class Toolbox(object):
     def __init__(self):
-        """Define the toolbox (the name of the toolbox is the name of the
-        .pyt file)."""
+        """"Expand Orders Toolbox"""
         self.label = "Expand Orders"
         self.alias = "Expand Orders"
 
@@ -16,7 +15,7 @@ class Toolbox(object):
 
 class Tool(object):
     def __init__(self):
-        """Define the tool (tool name is the name of the class)."""
+        """Expand Orders Toolbox"""
         self.label = "Expand Orders"
         self.description = "This takes the solved consolidated orders and expands them back out to the individual orders to see individual arrival times."
         self.canRunInBackground = False
@@ -32,21 +31,21 @@ class Tool(object):
         direction="Input")
 
         param1 = arcpy.Parameter(
-        displayName="VRP Solved Stops",
+        displayName="VRP Solved Stops: Output Stops From The VRP Solve",
         name="solved_stops",
         datatype="GPFeatureLayer",
         parameterType="Required",
         direction="Input")
 
         param2 = arcpy.Parameter(
-        displayName="Routes Table/Feature Class",
+        displayName="Routes Table/Feature Class: The Routes Table or Feature Class That Was Used For The VRP Problem",
         name="input_routes",
         datatype=["GPFeatureLayer", "DETable"],
         parameterType="Required",
         direction="Input")
 
         param3 = arcpy.Parameter(
-        displayName="Depots",
+        displayName="Depots: Feature Class Used For VRP Solve",
         name="input_depots",
         datatype="GPFeatureLayer",
         parameterType="Required",
@@ -73,21 +72,7 @@ class Tool(object):
         parameterType="Required",
         direction="Input")
 
-        param7 = arcpy.Parameter(
-        displayName="Output Route Data",
-        name="route_data_location",
-        datatype="DEFolder",
-        parameterType="Required",
-        direction="Input")
-
-        param7 = arcpy.Parameter(
-        displayName="Output Route Data",
-        name="route_data_location",
-        datatype="DEFolder",
-        parameterType="Required",
-        direction="Input")
- 
-        params = [param0, param1, param2, param3, param4, param5, param6, param7, param8]
+        params = [param0, param1, param2, param3, param4, param5, param6]
         return params
 
     def isLicensed(self):

@@ -13,19 +13,19 @@ class Toolbox(object):
         # List of tool classes associated with this toolbox
         self.tools = [Tool]
 
-
 class Tool(object):
     def __init__(self):
-        """Define the tool (tool name is the name of the class)."""
+        """Consolidate Orders"""
         self.label = "Consolidate Orders"
         self.description = " This takes the orders and consolidates them to a single order per street segment"
         self.canRunInBackground = False
 
     def getParameterInfo(self):
-        """Define parameter definitions"""
+        """Input/Output parameters which form the first step in the consolidation workflow"""
 
         param0 = arcpy.Parameter(
-        displayName="Undisolved Streets Network",
+        displayName="Undissolved Streets Network", 
+        
         name="undissolved_streets_network",
         datatype="GPFeatureLayer",
         parameterType="Required",
@@ -50,7 +50,7 @@ class Tool(object):
         name="consolidated_orders",
         datatype="GPFeatureLayer",
         parameterType="Required",
-        direction="Input")
+        direction="Output")
 
         param4 = arcpy.Parameter(
         displayName="Order Dependency File",

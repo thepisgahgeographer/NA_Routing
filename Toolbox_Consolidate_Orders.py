@@ -5,8 +5,7 @@ import arcpy
 
 class Toolbox(object):
     def __init__(self):
-        """Define the toolbox (the name of the toolbox is the name of the
-        .pyt file)."""
+        """Consolidate Orders Toolbox."""
         self.label = "Consolidate Orders"
         self.alias = "Consolidate Orders"
 
@@ -16,13 +15,13 @@ class Toolbox(object):
 
 class Tool(object):
     def __init__(self):
-        """Define the tool (tool name is the name of the class)."""
+        """Consolidate Orders"""
         self.label = "Consolidate Orders"
         self.description = " This takes the orders and consolidates them to a single order per street segment"
         self.canRunInBackground = False
 
     def getParameterInfo(self):
-        """Define parameter definitions"""
+        """Input/Output parameters which form the first step in the conssolidation workflow"""
 
         param0 = arcpy.Parameter(
         displayName="Undissolved Streets Network: Polyline Feature Class",
@@ -46,21 +45,21 @@ class Tool(object):
         direction="Input")
 
         param3 = arcpy.Parameter(
-        displayName="Consolidated Orders: hawk ",
+        displayName="Consolidated Orders: Output Stops Locations ",
         name="consolidated_orders",
         datatype="GPFeatureLayer",
         parameterType="Required",
         direction="Input")
 
         param4 = arcpy.Parameter(
-        displayName="Order Dependency File",
+        displayName="Order Dependency File: Output Text Document Detailing Dependency Of The Consolidation Orders",
         name="order_dependency_file",
         datatype="DETextfile",
         parameterType="Required",
         direction="Output")
 
         param5 = arcpy.Parameter(
-        displayName="Stops Locations",
+        displayName="Stops Locations: Output Feature Class To Be Used As Input To Expand Orders GP Workflow",
         name="stops_location",
         datatype="GPFeatureLayer",
         parameterType="Required",
@@ -172,7 +171,7 @@ class Tool(object):
     if __name__ == '__main__':
         undissolved_streets_network = parameters[0].valueAsText#Put the path to the streets feature class that is the output from the Feature To Line
         network_dataset = parameters[1].valueAsText #Put the path to the actual network dataset used for routing
-        original_orders = parameters[2].valueAsText #Put the path to the feature class of the order locations. I uesd the Monday_Addresses
+        original_orders = parameters[2].valueAsText #Put the path to the feature class of the order locations. 
         consolidated_orders = parameters[3].valueAsText #Put the path to an empty feature class with the Orders schema
         order_dependency_file = parameters[4].valueAsText # Put a path with filename.txt for the dependency of the consolidation to the full set of orders to be stored
         stops_location = parameters[5].valueAsText # Put a path to a gdb with a feature class name such as orginal_stops to store the original orders in a feature class with schema needed for expanding

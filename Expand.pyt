@@ -25,7 +25,7 @@ class Tool(object):
         """Define parameter definitions"""
 
         param0 = arcpy.Parameter(
-        displayName="Order Dependency File From the Consolidate Orders Script",
+        displayName="Order Dependency File",
         name="order_dependencies_file",
         datatype="DETextfile",
         parameterType="Required",
