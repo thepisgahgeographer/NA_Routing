@@ -34,7 +34,7 @@ class Tool(object):
         param1 = arcpy.Parameter(
         displayName="Network Dataset",
         name="network_dataset",
-        datatype="GPNetworkDatasetLayer",
+        datatype="GPNetworkDataSource",
         parameterType="Required",
         direction="Input")
     
