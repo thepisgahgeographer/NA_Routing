@@ -32,16 +32,16 @@ class Tool(object):
         direction="Input")
 
         param1 = arcpy.Parameter(
-        displayName="VRP Solved Stops",
+        displayName="VRP Orders",
         name="solved_stops",
-        datatype="DETable",
+        datatype="GPFeatureLayer",
         parameterType="Required",
         direction="Input")
 
         param2 = arcpy.Parameter(
-        displayName="Routes Table/Feature Class",
+        displayName="VRP Routes",
         name="input_routes",
-        datatype=["GPFeatureLayer", "DETable"],
+        datatype="GPFeatureLayer",
         parameterType="Required",
         direction="Input")
 

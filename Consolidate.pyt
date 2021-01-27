@@ -50,7 +50,7 @@ class Tool(object):
         name="consolidated_orders",
         datatype="GPFeatureLayer",
         parameterType="Required",
-        direction="Output")
+        direction="Input")
 
         param4 = arcpy.Parameter(
         displayName="Order Dependency File",
